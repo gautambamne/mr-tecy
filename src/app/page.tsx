@@ -7,42 +7,53 @@ import { Button } from "@/components/ui/button"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen pb-24 bg-slate-50">
+    <div className="min-h-screen pb-24 bg-slate-50 relative">
+      {/* Background Gradient Layer */}
+      <div className="absolute top-0 left-0 right-0 h-[30vh] bg-gradient-to-b from-[#A1F6FB] via-[#DBFDFC] to-slate-50 pointer-events-none" />
+
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600">
-              <Menu className="w-5 h-5" strokeWidth={1.5} />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-                <Wrench className="w-4 h-4 text-white" strokeWidth={2} />
+      <header className="px-4 pt-3 pb-0 relative">
+        <div className="max-w-md mx-auto space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600 -ml-2">
+                <Menu className="w-6 h-6" strokeWidth={2} />
+              </Button>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center transform rotate-3">
+                  <div className="w-4 h-4 bg-white transform rotate-45"></div>
+                </div>
+                <h1 className="text-xl font-bold text-slate-950 tracking-tight">Mr tecy</h1>
               </div>
-              <h1 className="text-lg font-semibold text-slate-950">Mr Tecy</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600 relative">
+                <Bell className="w-6 h-6" strokeWidth={2} />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-slate-900 rounded-full border border-[#CBF9FC]"></span>
+              </Button>
+              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                <img
+                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600 relative">
-              <Bell className="w-5 h-5" strokeWidth={1.5} />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-            </Button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">A</span>
-            </div>
-          </div>
+
+          {/* Search Bar moved to Header */}
+          <SearchBar />
         </div>
       </header>
 
+
       {/* Main Content */}
-      <main className="max-w-md mx-auto px-4 py-5 space-y-6">
-        {/* Search Bar */}
-        <SearchBar />
+      <main className="max-w-md mx-auto px-4 pt-6 pb-5 space-y-6 relative z-10">
 
         {/* Categories Section */}
         <section>
-          <h2 className="text-xs font-bold tracking-wider text-slate-400 uppercase mb-3">
-            Services
+          <h2 className="text-sm font-bold text-blue-600 mb-3 ml-1">
+            Appliances & Electronic
           </h2>
           <div className="grid grid-cols-4 gap-3">
             <CategoryCard
@@ -63,6 +74,7 @@ export default function HomePage() {
             />
           </div>
         </section>
+
 
         {/* Promotional Banner */}
         <section>
