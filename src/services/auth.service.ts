@@ -8,36 +8,26 @@ import {
     sendPasswordResetEmail,
     User
 } from "firebase/auth";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, googleProvider, storage } from "@/lib/firebase";
+import { auth, googleProvider } from "@/lib/firebase";
 
 export const authService = {
-    // Register with Email, Password, Name, and Profile Photo
-    async register(email: string, password: string, name: string, photoFile?: File) {
+    // Register with Email, Password, Name
+    async register(email: string, password: string, name: string) {
         try {
             // 1. Create user
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            let photoURL = "";
-
-            // 2. Upload photo if provided
-            if (photoFile) {
-                const storageRef = ref(storage, `profile_photos/${user.uid}`);
-                await uploadBytes(storageRef, photoFile);
-                photoURL = await getDownloadURL(storageRef);
-            }
-
-            // 3. Update profile
+            // 2. Update profile
             await updateProfile(user, {
                 displayName: name,
-                photoURL: photoURL || null,
+                photoURL: null,
             });
 
-            // 4. Send Verification Email
+            // 3. Send Verification Email
             await sendEmailVerification(user);
 
-            // 5. Sign out immediately (don't auto-login)
+            // 4. Sign out immediately (don't auto-login)
             await signOut(auth);
 
             return user;
