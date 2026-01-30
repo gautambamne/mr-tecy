@@ -1,11 +1,30 @@
-import { Bell, Menu, Wrench } from "lucide-react"
+"use client";
+
+import { Bell, Menu, Wrench, LogOut, User } from "lucide-react"
 import { SearchBar } from "@/components/SearchBar"
 import { CategoryCard } from "@/components/CategoryCard"
 import { ServiceCard } from "@/components/ServiceCard"
 import { BottomNavigation } from "@/components/BottomNavigation"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/context/AuthContext"
+import Link from "next/link"
+import { authService } from "@/services/auth.service"
 
 export default function HomePage() {
+  const { user, loading } = useAuth();
+
+  const handleLogout = async () => {
+    await authService.logout();
+  }
+
   return (
     <div className="min-h-screen pb-24 bg-slate-50 relative">
       {/* Background Gradient Layer */}
@@ -27,17 +46,46 @@ export default function HomePage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="text-slate-700 hover:text-blue-600 relative">
-                <Bell className="w-6 h-6" strokeWidth={2} />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-slate-900 rounded-full border border-[#CBF9FC]"></span>
-              </Button>
-              <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                <img
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              {!loading && (
+                user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border-2 border-white shadow-sm overflow-hidden">
+                        <img
+                          src={user.photoURL || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80"}
+                          alt="Profile"
+                          className="w-full h-full object-cover"
+                        />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">My Account</p>
+                          <p className="text-xs leading-none text-muted-foreground text-slate-500">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Link href="/login">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-full text-sm font-medium shadow-sm transition-colors">
+                      Login
+                    </Button>
+                  </Link>
+                )
+              )}
             </div>
           </div>
 
