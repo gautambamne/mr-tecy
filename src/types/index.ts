@@ -34,6 +34,8 @@ export interface Partner {
     location: GeoPoint;
     contactInfo?: string;
     completedJobs: number; // For social proof
+    priceMultiplier: number; // Pricing flexibility (e.g., 1.0 = base price, 1.2 = 20% premium)
+    photoURL?: string; // Partner profile photo
 }
 
 export type ServiceCategory = 'Appliance' | 'Vehicle' | 'Electronics' | 'Plumbing' | 'Cleaning';
@@ -54,7 +56,9 @@ export type BookingStatus = 'pending' | 'accepted' | 'in_progress' | 'completed'
 export interface Booking {
     id: string;
     customerId: string;
+    customerName: string; // Denormalized for display
     partnerId: string;
+    partnerName: string; // Denormalized for display
     serviceId: string;
     serviceName: string; // Denormalized
     servicePrice: number; // Denormalized
@@ -62,9 +66,26 @@ export interface Booking {
     status: BookingStatus;
     scheduledTime: Timestamp;
     location: Address;
+    description: string; // Customer's issue description
+    notes?: string; // Optional special instructions
+    images: string[]; // Firebase Storage URLs for customer-uploaded images
     paymentMethod: 'COD'; // Fixed
     totalAmount: number;
     paymentStatus: 'pending' | 'paid';
     warrantyValidUntil?: Timestamp;
+    createdAt: Timestamp;
+    updatedAt?: Timestamp;
+}
+
+// Customer review/feedback for completed bookings
+export interface Review {
+    id: string;
+    bookingId: string;
+    customerId: string;
+    customerName: string; // Denormalized
+    partnerId: string;
+    partnerName: string; // Denormalized
+    rating: number; // 1-5 stars
+    feedback: string; // Customer comment
     createdAt: Timestamp;
 }

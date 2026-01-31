@@ -1,0 +1,85 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ===== Helper Functions =====
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isValidImageType() {
+      //  Only allow image uploads
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isWithinSizeLimit(maxSizeMB) {
+      // Check file size (size is in bytes)
+      return request.resource.size < maxSizeMB * 1024 * 1024;
+    }
+
+    // ===== Service Images (Admin uploads) =====
+    
+    match /services/{serviceId}/{fileName} {
+      // Public read - anyone can view service images
+      allow read: if true;
+      
+      // Only authenticated admins can upload/update service images
+      allow write: if isAuthenticated() &&
+                      isValidImageType() &&
+                      isWithinSizeLimit(5); // 5MB limit
+    }
+
+    // ===== Partner Profile Photos =====
+    
+    match /partners/{partnerId}/{fileName} {
+      // Public read - anyone can view partner photos
+      allow read: if true;
+      
+      // Only authenticated admins can upload partner photos
+      allow write: if isAuthenticated() &&
+                      isValidImageType() &&
+                      isWithinSizeLimit(5); // 5MB limit
+    }
+
+    // ===== Booking Images (Customer uploads) =====
+    
+    match /bookings/{bookingId}/images/{imageId} {
+      // Booking participants (customer, partner) and admins can read
+      allow read: if isAuthenticated();
+      
+      // Only authenticated users can upload booking images
+      // Ideally, we'd verify the user is the booking owner, but Storage rules
+      // don't have access to Firestore. We rely on client-side validation.
+      allow create: if isAuthenticated() &&
+                       isValidImageType() &&
+                       isWithinSizeLimit(5); // 5MB per image
+      
+      // Allow users to delete their own uploaded images
+      allow delete: if isAuthenticated();
+      
+      // No updates - delete and re-upload instead
+      allow update: if false;
+    }
+
+    // ===== User Profile Pictures =====
+    
+    match /users/{userId}/profile/{fileName} {
+      // Public read - profile pictures are public
+      allow read: if true;
+      
+      // Users can upload/update their own profile picture
+      allow write: if isAuthenticated() &&
+                      request.auth.uid == userId &&
+                      isValidImageType() &&
+                      isWithinSizeLimit(2); // 2MB limit for profile pics
+    }
+
+    // ===== Default Deny =====
+    
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

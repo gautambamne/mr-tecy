@@ -27,8 +27,9 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown } from "lucide-react";
-import { serviceService } from "@/services/service.service";
+import { Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown, Image as ImageIcon, X } from "lucide-react";
+import { createServiceAction, updateServiceAction } from "@/actions/service.actions";
+import { uploadService } from "@/services/upload.service";
 import { Service, ServiceCategory } from "@/types";
 import { useRealtimeServices } from "@/hooks/useRealtimeServices";
 import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
@@ -46,7 +47,10 @@ export default function ServicesPage() {
         description: "",
         price: "",
         durationMinutes: "60",
+        iconUrl: "",
     });
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     const handleOpenDialog = (service?: Service) => {
         if (service) {
@@ -57,7 +61,10 @@ export default function ServicesPage() {
                 description: service.description,
                 price: service.price.toString(),
                 durationMinutes: service.durationMinutes.toString(),
+                iconUrl: service.iconUrl || "",
             });
+            setImagePreview(service.iconUrl || null);
+            setImageFile(null);
         } else {
             setEditingId(null);
             setFormData({
@@ -66,30 +73,79 @@ export default function ServicesPage() {
                 description: "",
                 price: "",
                 durationMinutes: "60",
+                iconUrl: "",
             });
+            setImagePreview(null);
+            setImageFile(null);
         }
         setIsDialogOpen(true);
     };
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const removeImage = () => {
+        setImageFile(null);
+        setImagePreview(null);
+        setFormData({ ...formData, iconUrl: "" });
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log("[ServicesPage] Form submitted");
         setSubmitting(true);
         try {
+            let iconUrl = formData.iconUrl;
+
+            // Upload image if a new file is selected
+            if (imageFile) {
+                console.log("[ServicesPage] New image selected. Starting upload...");
+                // Upload directly to Firebase Storage (Client-side)
+                try {
+                    iconUrl = await uploadService.uploadImage(imageFile, "services");
+                    console.log("[ServicesPage] Image uploaded successfully. URL:", iconUrl);
+                } catch (uploadError: any) {
+                    console.error("[ServicesPage] Upload failed:", uploadError);
+                    alert(`Upload failed: ${uploadError.message}`);
+                    setSubmitting(false);
+                    return;
+                }
+            } else {
+                console.log("[ServicesPage] No new image selected. Using existing URL (if any).");
+            }
+
             const dataToSave = {
                 ...formData,
                 price: parseFloat(formData.price),
                 durationMinutes: parseInt(formData.durationMinutes),
                 active: true,
+                iconUrl,
             };
 
+            console.log("[ServicesPage] Saving service data via Server Action:", dataToSave);
+
             if (editingId) {
-                await serviceService.updateService(editingId, dataToSave);
+                const result = await updateServiceAction(editingId, dataToSave);
+                if (result.error) throw new Error(result.error);
+                console.log("[ServicesPage] Service updated");
             } else {
-                await serviceService.createService(dataToSave);
+                const result = await createServiceAction(dataToSave);
+                if (result.error) throw new Error(result.error);
+                console.log("[ServicesPage] Service created");
             }
             setIsDialogOpen(false);
-        } catch (error) {
-            console.error("Error saving service:", error);
+        } catch (error: any) {
+            console.error("[ServicesPage] Error saving service:", error);
+            alert(`Failed to save service: ${error.message}`);
         } finally {
             setSubmitting(false);
         }
@@ -97,7 +153,7 @@ export default function ServicesPage() {
 
     const handleToggleStatus = async (service: Service) => {
         try {
-            await serviceService.updateService(service.id, { active: !service.active });
+            await updateServiceAction(service.id, { active: !service.active });
         } catch (error) {
             console.error("Error toggling service status:", error);
         }
@@ -250,6 +306,45 @@ export default function ServicesPage() {
                         </DialogTitle>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="image">Service Image</Label>
+                            <div className="flex items-start gap-4">
+                                {imagePreview ? (
+                                    <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200 group">
+                                        <img
+                                            src={imagePreview}
+                                            alt="Preview"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={removeImage}
+                                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                                        <ImageIcon className="h-8 w-8 mb-1" />
+                                        <span className="text-[10px]">No Image</span>
+                                    </div>
+                                )}
+                                <div className="flex-1 space-y-2">
+                                    <Input
+                                        id="image"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="cursor-pointer text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    />
+                                    <p className="text-xs text-slate-500">
+                                        Recommended: Square image, max 2MB.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="name">Service Name</Label>
                             <Input

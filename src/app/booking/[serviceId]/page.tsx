@@ -45,34 +45,49 @@ export default function BookingPage() {
     };
 
     const handleConfirmBooking = async () => {
-        if (!user || !service || !selectedPartner) return;
+        if (!user || !service || !selectedPartner) {
+            alert("Please select a partner first");
+            return;
+        }
+
+        if (!profile) {
+            router.push("/login");
+            return;
+        }
 
         setBooking(true);
         try {
             const partner = partners.find(p => p.id === selectedPartner);
 
-            await bookingService.createBooking({
+            const bookingData = {
                 customerId: user.uid,
+                customerName: profile.displayName,
                 partnerId: selectedPartner,
+                partnerName: partner?.name || "Unknown Partner",
                 serviceId: service.id,
                 serviceName: service.name,
                 servicePrice: service.price,
-                type: 'scheduled',
-                scheduledTime: new Date() as any, // Simple ASAP booking
-                location: profile?.addresses[0] || {
+                type: "scheduled" as const,
+                scheduledTime: new Date() as any, // Will be converted to Timestamp by Firestore
+                location: profile.addresses[0] || {
                     id: 'temp',
                     label: 'Current',
                     street: 'Default St',
-                    city: 'New York',
-                    zipCode: '10001'
+                    city: 'Default City',
+                    zipCode: '00000'
                 },
-                paymentMethod: 'COD',
-                totalAmount: service.price,
-            });
+                description: "Service request - booking via partner selection",
+                notes: "",
+                images: [],
+                paymentMethod: "COD" as const,
+                totalAmount: service.price
+            };
 
+            await bookingService.createBooking(bookingData);
             router.push("/history");
         } catch (error) {
-            console.error("Booking error:", error);
+            console.error("Error creating booking:", error);
+            alert("Failed to create booking. Please try again.");
         } finally {
             setBooking(false);
         }
@@ -128,8 +143,8 @@ export default function BookingPage() {
                                 key={partner.id}
                                 onClick={() => setSelectedPartner(partner.id)}
                                 className={`group cursor-pointer p-4 rounded-2xl border-2 transition-all ${selectedPartner === partner.id
-                                        ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-100"
-                                        : "border-transparent bg-white shadow-sm hover:shadow-md"
+                                    ? "border-blue-600 bg-blue-50/50 ring-4 ring-blue-100"
+                                    : "border-transparent bg-white shadow-sm hover:shadow-md"
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
