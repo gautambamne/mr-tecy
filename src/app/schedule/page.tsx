@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { serviceService } from "@/services/service.service";
@@ -37,7 +37,7 @@ const TIME_SLOTS = [
     { label: "6:00 PM - 8:00 PM", value: "18:00" },
 ];
 
-export default function SchedulePage() {
+function SchedulePageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, profile, refreshProfile } = useAuth();
@@ -302,14 +302,14 @@ export default function SchedulePage() {
                                 key={type}
                                 onClick={() => setBookingType(type as "instant" | "scheduled")}
                                 className={`group relative p-4 rounded-2xl border-2 transition-all duration-200 ${bookingType === type
-                                        ? "border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md shadow-blue-200/50"
-                                        : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
+                                    ? "border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md shadow-blue-200/50"
+                                    : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
                                     }`}
                             >
                                 <div className="flex flex-col items-center gap-2">
                                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${bookingType === type
-                                            ? "bg-blue-600 scale-110"
-                                            : "bg-slate-100 group-hover:bg-slate-200"
+                                        ? "bg-blue-600 scale-110"
+                                        : "bg-slate-100 group-hover:bg-slate-200"
                                         }`}>
                                         {type === "instant" ? (
                                             <Zap className={`w-6 h-6 ${bookingType === type ? "text-white" : "text-slate-500"}`} />
@@ -366,8 +366,8 @@ export default function SchedulePage() {
                                         key={slot.value}
                                         onClick={() => setSelectedTimeSlot(slot.value)}
                                         className={`group w-full p-3.5 rounded-2xl border-2 text-left text-sm font-semibold transition-all duration-200 ${selectedTimeSlot === slot.value
-                                                ? "border-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 shadow-md shadow-blue-200/50 text-blue-900"
-                                                : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm text-slate-700"
+                                            ? "border-blue-600 bg-gradient-to-r from-blue-50 to-blue-100 shadow-md shadow-blue-200/50 text-blue-900"
+                                            : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm text-slate-700"
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -403,8 +403,8 @@ export default function SchedulePage() {
                                     key={addr.id}
                                     onClick={() => setSelectedAddress(addr)}
                                     className={`w-full p-4 rounded-2xl border-2 text-left transition-all duration-200 ${selectedAddress?.id === addr.id
-                                            ? "border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md shadow-blue-200/50"
-                                            : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
+                                        ? "border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md shadow-blue-200/50"
+                                        : "border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm"
                                         }`}
                                 >
                                     <div className="flex items-start gap-3">
@@ -610,5 +610,20 @@ export default function SchedulePage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SchedulePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+                <div className="text-center">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
+                    <p className="text-sm text-slate-500 font-medium">Loading booking details...</p>
+                </div>
+            </div>
+        }>
+            <SchedulePageContent />
+        </Suspense>
     );
 }

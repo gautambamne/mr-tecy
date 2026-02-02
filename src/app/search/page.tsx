@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { serviceService } from "@/services/service.service";
 import { Service } from "@/types";
@@ -11,7 +11,7 @@ import { ChevronLeft, Search as SearchIcon, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function SearchPage() {
+function SearchPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q") || "";
@@ -162,8 +162,8 @@ export default function SearchPage() {
                                 key={cat}
                                 onClick={() => handleCategoryChange(cat)}
                                 className={`px-4 py-2 rounded-full font-bold text-sm whitespace-nowrap transition-all ${category === cat
-                                        ? "bg-blue-600 text-white shadow-md"
-                                        : "bg-white text-slate-600 border-2 border-slate-200 hover:border-blue-300"
+                                    ? "bg-blue-600 text-white shadow-md"
+                                    : "bg-white text-slate-600 border-2 border-slate-200 hover:border-blue-300"
                                     }`}
                             >
                                 {cat}
@@ -274,5 +274,20 @@ export default function SearchPage() {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
+                    <p className="text-sm text-slate-500 font-medium">Loading search...</p>
+                </div>
+            </div>
+        }>
+            <SearchPageContent />
+        </Suspense>
     );
 }
