@@ -27,11 +27,14 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Plus, Pencil, Loader2, Users, MapPin } from "lucide-react";
+import { Plus, Pencil, Loader2, Users, MapPin, Star, CheckCircle2, UserCheck, Clock } from "lucide-react";
 import { partnerService } from "@/services/partner.service";
 import { serviceService } from "@/services/service.service";
 import { Partner, Service } from "@/types";
 import { GeoPoint } from "firebase/firestore";
+import { MobileDataCard } from "@/components/admin/MobileDataCard";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function PartnersPage() {
     const [partners, setPartners] = useState<Partner[]>([]);
@@ -39,6 +42,7 @@ export default function PartnersPage() {
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const isMobile = useMediaQuery("(max-width: 768px)");
 
     // Form State
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -118,93 +122,190 @@ export default function PartnersPage() {
         }
     };
 
+    // Calculate stats
+    const stats = {
+        total: partners.length,
+        online: partners.filter(p => p.availability === 'online').length,
+        offline: partners.filter(p => p.availability === 'offline').length,
+        avgRating: partners.length > 0
+            ? (partners.reduce((sum, p) => sum + p.rating, 0) / partners.length).toFixed(1)
+            : '0.0'
+    };
+
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-950">Partners & Technicians</h1>
-                    <p className="text-slate-500">Manage your fleet of service providers.</p>
+                    <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
+                        Partners & Technicians
+                    </h1>
+                    <p className="text-slate-600 text-xs sm:text-sm mt-1 font-medium">Manage your fleet of service providers.</p>
                 </div>
-                <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700 font-bold">
-                    <Plus className="mr-2 h-4 w-4" /> Register Partner
+                <Button
+                    onClick={() => handleOpenDialog()}
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 font-bold gap-2 shadow-lg shadow-blue-200 h-10 sm:h-11 px-4 sm:px-6 touch-target"
+                >
+                    <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="hidden sm:inline">Register Partner</span>
+                    <span className="sm:hidden">Register</span>
                 </Button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <Table>
-                    <TableHeader className="bg-slate-50">
-                        <TableRow>
-                            <TableHead className="font-bold">Partner Name</TableHead>
-                            <TableHead className="font-bold">Skills</TableHead>
-                            <TableHead className="font-bold">Rating</TableHead>
-                            <TableHead className="font-bold">Status</TableHead>
-                            <TableHead className="text-right font-bold">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="p-3 sm:p-4 bg-white/95 backdrop-blur-md rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-slate-100 group">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                        <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-extrabold tracking-wider">Total Partners</p>
+                        <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 group-hover:scale-105 transition-transform">{stats.total}</p>
+                </div>
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-green-100 group">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                        <p className="text-[10px] sm:text-xs text-green-700 uppercase font-extrabold tracking-wider">Online</p>
+                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-green-700 group-hover:scale-105 transition-transform">{stats.online}</p>
+                </div>
+                <div className="p-3 sm:p-4 bg-slate-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-slate-200 group">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                        <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-extrabold tracking-wider">Offline</p>
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-600 group-hover:scale-105 transition-transform">{stats.offline}</p>
+                </div>
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-amber-100 group">
+                    <div className="flex items-center justify-between mb-1 sm:mb-2">
+                        <p className="text-[10px] sm:text-xs text-amber-700 uppercase font-extrabold tracking-wider">Avg Rating</p>
+                        <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-600 fill-amber-600" />
+                    </div>
+                    <p className="text-2xl sm:text-3xl font-black text-amber-700 group-hover:scale-105 transition-transform">{stats.avgRating}</p>
+                </div>
+            </div>
+
+            {/* Mobile Card View / Desktop Table View */}
+            {isMobile ? (
+                <div className="space-y-3">
+                    {loading ? (
+                        [...Array(3)].map((_, i) => (
+                            <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-xl" />
+                        ))
+                    ) : partners.length === 0 ? (
+                        <div className="text-center py-12 bg-white/95 backdrop-blur-md rounded-xl shadow-md">
+                            <UserCheck className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-slate-400">No partners registered yet.</p>
+                        </div>
+                    ) : (
+                        partners.map((partner) => {
+                            const partnerSkills = partner.services.map(s => {
+                                const service = services.find(sv => sv.id === s);
+                                return service?.name || s;
+                            });
+
+                            return (
+                                <MobileDataCard
+                                    key={partner.id}
+                                    title={partner.name}
+                                    subtitle={partner.bio}
+                                    status={{
+                                        label: partner.availability === 'online' ? 'Online' : 'Offline',
+                                        variant: partner.availability === 'online' ? 'default' : 'secondary'
+                                    }}
+                                    metadata={[
+                                        { label: "Rating", value: `★ ${partner.rating.toFixed(1)}` },
+                                        { label: "Skills", value: `${partner.services.length} services` },
+                                        { label: "Contact", value: partner.contactInfo || 'N/A' }
+                                    ]}
+                                    actions={[
+                                        {
+                                            label: "Edit",
+                                            icon: <Pencil className="h-4 w-4" />,
+                                            onClick: () => handleOpenDialog(partner)
+                                        }
+                                    ]}
+                                />
+                            );
+                        })
+                    )}
+                </div>
+            ) : (
+                <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-slate-100 overflow-hidden">
+                    <Table>
+                        <TableHeader className="bg-slate-50">
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-12">
-                                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
-                                </TableCell>
+                                <TableHead className="font-bold">Partner Name</TableHead>
+                                <TableHead className="font-bold">Skills</TableHead>
+                                <TableHead className="font-bold">Rating</TableHead>
+                                <TableHead className="font-bold">Status</TableHead>
+                                <TableHead className="text-right font-bold">Actions</TableHead>
                             </TableRow>
-                        ) : partners.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={5} className="text-center py-12 text-slate-400">
-                                    No partners registered yet.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            partners.map((partner) => (
-                                <TableRow key={partner.id}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
-                                                {partner.name.charAt(0)}
-                                            </div>
-                                            {partner.name}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1 flex-wrap">
-                                            {partner.services.slice(0, 2).map(s => {
-                                                const service = services.find(sv => sv.id === s);
-                                                return (
-                                                    <span key={s} className="bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full font-medium">
-                                                        {service?.name || s}
-                                                    </span>
-                                                )
-                                            })}
-                                            {partner.services.length > 2 && <span className="text-[10px] text-slate-400">+{partner.services.length - 2} more</span>}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1 text-amber-500 font-bold">
-                                            <span>★</span> {partner.rating.toFixed(1)}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${partner.availability === 'online' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
-                                            }`}>
-                                            {partner.availability}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-slate-500"
-                                            onClick={() => handleOpenDialog(partner)}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
+                        </TableHeader>
+                        <TableBody>
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-12">
+                                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                                     </TableCell>
                                 </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                            ) : partners.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center py-12 text-slate-400">
+                                        No partners registered yet.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                partners.map((partner) => (
+                                    <TableRow key={partner.id}>
+                                        <TableCell className="font-medium">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                                    {partner.name.charAt(0)}
+                                                </div>
+                                                {partner.name}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-1 flex-wrap">
+                                                {partner.services.slice(0, 2).map(s => {
+                                                    const service = services.find(sv => sv.id === s);
+                                                    return (
+                                                        <span key={s} className="bg-slate-100 text-slate-600 text-[10px] px-1.5 py-0.5 rounded-full font-medium">
+                                                            {service?.name || s}
+                                                        </span>
+                                                    )
+                                                })}
+                                                {partner.services.length > 2 && <span className="text-[10px] text-slate-400">+{partner.services.length - 2} more</span>}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1 text-amber-500 font-bold">
+                                                <span>★</span> {partner.rating.toFixed(1)}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${partner.availability === 'online' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                                                }`}>
+                                                {partner.availability}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-slate-500"
+                                                onClick={() => handleOpenDialog(partner)}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">

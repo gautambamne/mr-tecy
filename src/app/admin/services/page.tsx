@@ -27,15 +27,19 @@ import {
     SelectTrigger,
     SelectValue
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, TrendingUp, TrendingDown, Image as ImageIcon, X, Eye } from "lucide-react";
 import { createServiceAction, updateServiceAction } from "@/actions/service.actions";
 import { cloudinaryUploadService } from "@/services/cloudinary-upload.service";
 import { Service, ServiceCategory } from "@/types";
 import { useRealtimeServices } from "@/hooks/useRealtimeServices";
 import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
+import { MobileDataCard } from "@/components/admin/MobileDataCard";
+import { Avatar } from "@/components/ui/avatar";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 export default function ServicesPage() {
     const { services, loading } = useRealtimeServices({ onlyActive: false });
+    const isMobile = useMediaQuery("(max-width: 768px)");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -171,132 +175,184 @@ export default function ServicesPage() {
     };
 
     return (
-        <div className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">Service Catalog</h1>
-                    <p className="text-slate-500 mt-1">Manage your automotive and appliance services.</p>
+                    <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-transparent">
+                        Service Catalog
+                    </h1>
+                    <p className="text-slate-600 text-xs sm:text-sm mt-1 font-medium">Manage your automotive and appliance services.</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                     <RealtimeIndicator />
-                    <Button onClick={() => handleOpenDialog()} className="bg-blue-600 hover:bg-blue-700 font-bold gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add Service
+                    <Button
+                        onClick={() => handleOpenDialog()}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 font-bold gap-2 shadow-lg shadow-blue-200 h-10 sm:h-11 px-4 sm:px-6 touch-target"
+                    >
+                        <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="hidden sm:inline">Add Service</span>
+                        <span className="sm:hidden">Add</span>
                     </Button>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-white rounded-lg border border-slate-200">
-                    <p className="text-xs text-slate-500 uppercase font-medium">Total Services</p>
-                    <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="p-3 sm:p-4 bg-white/95 backdrop-blur-md rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-slate-100 group">
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-extrabold tracking-wider">Total Services</p>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1 sm:mt-2 group-hover:scale-105 transition-transform">{stats.total}</p>
                 </div>
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-green-100 group">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-green-700 uppercase font-medium">Active</p>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <p className="text-[10px] sm:text-xs text-green-700 uppercase font-extrabold tracking-wider">Active</p>
+                        <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                     </div>
-                    <p className="text-2xl font-bold text-green-700 mt-1">{stats.active}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-green-700 mt-1 sm:mt-2 group-hover:scale-105 transition-transform">{stats.active}</p>
                 </div>
-                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="p-3 sm:p-4 bg-slate-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-slate-200 group">
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-slate-500 uppercase font-medium">Inactive</p>
-                        <TrendingDown className="h-4 w-4 text-slate-400" />
+                        <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-extrabold tracking-wider">Inactive</p>
+                        <TrendingDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-400" />
                     </div>
-                    <p className="text-2xl font-bold text-slate-600 mt-1">{stats.inactive}</p>
+                    <p className="text-2xl sm:text-3xl font-black text-slate-600 mt-1 sm:mt-2 group-hover:scale-105 transition-transform">{stats.inactive}</p>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-xs text-blue-700 uppercase font-medium">Avg Price</p>
-                    <p className="text-2xl font-bold text-blue-700 mt-1">₹{stats.avgPrice}</p>
+                <div className="p-3 sm:p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-blue-100 group">
+                    <p className="text-[10px] sm:text-xs text-blue-700 uppercase font-extrabold tracking-wider">Avg Price</p>
+                    <p className="text-2xl sm:text-3xl font-black text-blue-700 mt-1 sm:mt-2 group-hover:scale-105 transition-transform">₹{stats.avgPrice}</p>
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <Table>
-                        <TableHeader className="bg-slate-50">
-                            <TableRow>
-                                <TableHead className="font-bold">Service Name</TableHead>
-                                <TableHead className="font-bold">Category</TableHead>
-                                <TableHead className="font-bold">Base Price</TableHead>
-                                <TableHead className="font-bold">Duration</TableHead>
-                                <TableHead className="font-bold">Status</TableHead>
-                                <TableHead className="text-right font-bold">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {loading ? (
+            {/* Mobile Card View / Desktop Table View */}
+            {isMobile ? (
+                <div className="space-y-3">
+                    {loading ? (
+                        [...Array(3)].map((_, i) => (
+                            <div key={i} className="h-32 bg-slate-100 animate-pulse rounded-xl" />
+                        ))
+                    ) : services.length === 0 ? (
+                        <div className="text-center py-12 bg-white/95 backdrop-blur-md rounded-xl shadow-md">
+                            <Loader2 className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                            <p className="text-sm font-medium text-slate-400">No services found. Add your first service to get started.</p>
+                        </div>
+                    ) : (
+                        services.map((service) => (
+                            <MobileDataCard
+                                key={service.id}
+                                title={service.name}
+                                subtitle={service.description}
+                                image={service.iconUrl}
+                                status={{
+                                    label: service.active ? "Active" : "Inactive",
+                                    variant: service.active ? "default" : "secondary"
+                                }}
+                                metadata={[
+                                    { label: "Category", value: service.category },
+                                    { label: "Price", value: `₹${service.price}` },
+                                    { label: "Duration", value: `${service.durationMinutes} min` },
+                                    { label: "Status", value: service.active ? "Active" : "Inactive" }
+                                ]}
+                                actions={[
+                                    {
+                                        label: "Edit",
+                                        icon: <Pencil className="h-4 w-4" />,
+                                        onClick: () => handleOpenDialog(service)
+                                    },
+                                    {
+                                        label: service.active ? "Deactivate" : "Activate",
+                                        icon: <Eye className="h-4 w-4" />,
+                                        onClick: () => handleToggleStatus(service)
+                                    }
+                                ]}
+                            />
+                        ))
+                    )}
+                </div>
+            ) : (
+                <div className="bg-white/95 backdrop-blur-md rounded-xl shadow-md border border-slate-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-slate-50">
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-12">
-                                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
-                                    </TableCell>
+                                    <TableHead className="font-bold">Service Name</TableHead>
+                                    <TableHead className="font-bold">Category</TableHead>
+                                    <TableHead className="font-bold">Base Price</TableHead>
+                                    <TableHead className="font-bold">Duration</TableHead>
+                                    <TableHead className="font-bold">Status</TableHead>
+                                    <TableHead className="text-right font-bold">Actions</TableHead>
                                 </TableRow>
-                            ) : services.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-12 text-slate-400">
-                                        No services found. Add your first service to get started.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                services.map((service) => (
-                                    <TableRow key={service.id} className="hover:bg-slate-50 transition-colors">
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-slate-900">{service.name}</span>
-                                                <span className="text-xs text-slate-400 line-clamp-1">{service.description}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium">
-                                                {service.category}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="font-bold text-slate-900">₹{service.price}</TableCell>
-                                        <TableCell className="text-sm text-slate-600">{service.durationMinutes} min</TableCell>
-                                        <TableCell>
-                                            <button
-                                                onClick={() => handleToggleStatus(service)}
-                                                className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition-colors ${service.active
-                                                    ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                                    }`}
-                                            >
-                                                {service.active ? 'Active' : 'Inactive'}
-                                            </button>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600"
-                                                    onClick={() => handleOpenDialog(service)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className={`h-8 w-8 p-0 ${service.active
-                                                        ? "text-slate-500 hover:text-red-600"
-                                                        : "text-slate-500 hover:text-green-600"
-                                                        }`}
-                                                    onClick={() => handleToggleStatus(service)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-12">
+                                            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto" />
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
+                                ) : services.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center py-12 text-slate-400">
+                                            No services found. Add your first service to get started.
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    services.map((service) => (
+                                        <TableRow key={service.id} className="hover:bg-slate-50 transition-colors">
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-slate-900">{service.name}</span>
+                                                    <span className="text-xs text-slate-400 line-clamp-1">{service.description}</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium">
+                                                    {service.category}
+                                                </span>
+                                            </TableCell>
+                                            <TableCell className="font-bold text-slate-900">₹{service.price}</TableCell>
+                                            <TableCell className="text-sm text-slate-600">{service.durationMinutes} min</TableCell>
+                                            <TableCell>
+                                                <button
+                                                    onClick={() => handleToggleStatus(service)}
+                                                    className={`px-3 py-1 rounded-full text-xs font-bold uppercase transition-colors ${service.active
+                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                        }`}
+                                                >
+                                                    {service.active ? 'Active' : 'Inactive'}
+                                                </button>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600"
+                                                        onClick={() => handleOpenDialog(service)}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className={`h-8 w-8 p-0 ${service.active
+                                                            ? "text-slate-500 hover:text-red-600"
+                                                            : "text-slate-500 hover:text-green-600"
+                                                            }`}
+                                                        onClick={() => handleToggleStatus(service)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -439,3 +495,4 @@ export default function ServicesPage() {
         </div>
     );
 }
+

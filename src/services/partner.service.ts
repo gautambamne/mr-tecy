@@ -8,6 +8,7 @@ import {
     getDoc,
     query,
     where,
+    onSnapshot,
     serverTimestamp
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -117,6 +118,38 @@ export const partnerService = {
         } catch (error) {
             console.error("Error getting available partners:", error);
             throw error;
+        }
+    },
+
+    // Real-time subscription to partners
+    subscribeToPartners(
+        onUpdate: (partners: Partner[]) => void,
+        onError?: (error: Error) => void
+    ) {
+        try {
+            const partnersRef = collection(db, "partners");
+
+            // Use onSnapshot for real-time updates
+            const unsubscribe = onSnapshot(
+                partnersRef,
+                (snapshot) => {
+                    const partners = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    } as Partner));
+                    onUpdate(partners);
+                },
+                (error) => {
+                    console.error("Error in partners subscription:", error);
+                    if (onError) onError(error as Error);
+                }
+            );
+
+            return unsubscribe;
+        } catch (error) {
+            console.error("Error setting up partners subscription:", error);
+            if (onError) onError(error as Error);
+            return () => { }; // Return empty unsubscribe function
         }
     }
 };
