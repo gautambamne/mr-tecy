@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/useToast";
 export default function BookingPage() {
     const { serviceId } = useParams();
     const router = useRouter();
-    const { user, profile } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
     const toast = useToast();
 
     const [service, setService] = useState<Service | null>(null);
@@ -23,10 +23,19 @@ export default function BookingPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Wait for auth to initialize
+        if (authLoading) return;
+
+        // Redirect to login if not authenticated
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
         if (serviceId) {
             fetchData();
         }
-    }, [serviceId]);
+    }, [serviceId, user, authLoading]);
 
     const fetchData = async () => {
         try {
@@ -65,7 +74,8 @@ export default function BookingPage() {
         router.push(`/schedule?serviceId=${service?.id}&partnerId=${selectedPartner}`);
     };
 
-    if (loading) {
+    // Show loading while auth is initializing or data is loading
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
                 <div className="text-center">
@@ -76,6 +86,16 @@ export default function BookingPage() {
         );
     }
 
+    // Redirect unauthenticated users - don't show any content
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+                <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    // Only show "not found" after confirming user is authenticated
     if (!service) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">

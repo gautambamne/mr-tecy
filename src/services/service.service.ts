@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Service } from "@/types";
+import { migrateLegacyCategory } from "@/constants/categories";
 
 export const serviceService = {
     // Create Service (Admin only)
@@ -44,7 +45,15 @@ export const serviceService = {
             }
 
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service));
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                // Migrate legacy category values
+                return {
+                    ...data,
+                    id: doc.id,
+                    category: migrateLegacyCategory(data.category as string)
+                } as Service;
+            });
         } catch (error) {
             console.error("Error getting services:", error);
             throw error;
@@ -57,7 +66,13 @@ export const serviceService = {
             const serviceRef = doc(db, "services", id);
             const snap = await getDoc(serviceRef);
             if (snap.exists()) {
-                return { id: snap.id, ...snap.data() } as Service;
+                const data = snap.data();
+                // Migrate legacy category values
+                return {
+                    ...data,
+                    id: snap.id,
+                    category: migrateLegacyCategory(data.category as string)
+                } as Service;
             }
             return null;
         } catch (error) {
@@ -93,10 +108,15 @@ export const serviceService = {
         return onSnapshot(
             q,
             (snapshot) => {
-                const data = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                } as Service));
+                const data = snapshot.docs.map(doc => {
+                    const serviceData = doc.data();
+                    // Migrate legacy category values
+                    return {
+                        ...serviceData,
+                        id: doc.id,
+                        category: migrateLegacyCategory(serviceData.category as string)
+                    } as Service;
+                });
 
                 onUpdate(data);
             },
@@ -122,7 +142,14 @@ export const serviceService = {
         return onSnapshot(
             servicesRef,
             (snapshot) => {
-                const services = snapshot.docs.map(doc => doc.data() as Service);
+                const services = snapshot.docs.map(doc => {
+                    const data = doc.data() as Service;
+                    // Migrate legacy category values
+                    return {
+                        ...data,
+                        category: migrateLegacyCategory(data.category)
+                    } as Service;
+                });
 
                 const byCategory: Record<string, number> = {};
                 services.forEach(service => {

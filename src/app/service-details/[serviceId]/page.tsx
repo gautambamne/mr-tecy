@@ -15,7 +15,7 @@ import Link from "next/link";
 export default function ServiceDetailsPage() {
     const { serviceId } = useParams();
     const router = useRouter();
-    const { user, profile } = useAuth();
+    const { user, profile, loading: authLoading } = useAuth();
 
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
@@ -25,6 +25,10 @@ export default function ServiceDetailsPage() {
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
     useEffect(() => {
+        // Wait for auth to initialize
+        if (authLoading) return;
+
+        // Redirect to login if not authenticated
         if (!user) {
             router.push("/login");
             return;
@@ -38,7 +42,7 @@ export default function ServiceDetailsPage() {
         if (profile?.addresses && profile.addresses.length > 0) {
             setSelectedAddress(profile.addresses[0]);
         }
-    }, [serviceId, user, profile]);
+    }, [serviceId, user, profile, authLoading]);
 
     const fetchService = async () => {
         try {
@@ -78,7 +82,8 @@ export default function ServiceDetailsPage() {
         router.push(`/partners/${service?.id}`);
     };
 
-    if (loading) {
+    // Show loading while auth is initializing or service is loading
+    if (authLoading || loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -86,6 +91,16 @@ export default function ServiceDetailsPage() {
         );
     }
 
+    // Redirect unauthenticated users - don't show any content
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+
+    // Only show "not found" after confirming user is authenticated
     if (!service) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">

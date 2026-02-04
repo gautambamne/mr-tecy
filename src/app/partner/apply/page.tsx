@@ -14,11 +14,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Briefcase, Phone, MapPin, Award, CheckCircle2, Mail } from "lucide-react";
+import { SERVICE_CATEGORIES, CATEGORY_DISPLAY_NAMES } from "@/constants/categories";
 
 // Available skills for partners
-const AVAILABLE_SKILLS = [
-    "Vehicle", "Appliance", "Electronics", "Plumbing", "Cleaning"
-];
+const AVAILABLE_SKILLS = SERVICE_CATEGORIES.map(cat => CATEGORY_DISPLAY_NAMES[cat]);
 
 // Form validation schema
 const partnerApplicationSchema = z.object({

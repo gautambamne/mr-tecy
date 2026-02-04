@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronLeft, Search as SearchIcon, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SERVICE_CATEGORIES, CATEGORY_DISPLAY_NAMES } from "@/constants/categories";
 
 function SearchPageContent() {
     const router = useRouter();
@@ -116,7 +117,7 @@ function SearchPageContent() {
         router.replace(`/search${queryString ? `?${queryString}` : ""}`);
     };
 
-    const categories = ["Vehicle", "Appliance", "Electronics", "Plumbing", "Cleaning"];
+    const categories = SERVICE_CATEGORIES.map(cat => CATEGORY_DISPLAY_NAMES[cat]);
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24">

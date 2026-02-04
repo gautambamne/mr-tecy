@@ -10,6 +10,7 @@ import { ChevronLeft, Wrench, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { SERVICE_CATEGORIES, CATEGORY_DISPLAY_NAMES } from "@/constants/categories";
 
 export default function ServicesPage() {
     const router = useRouter();
@@ -19,7 +20,7 @@ export default function ServicesPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-    const categories = ["All", "Vehicle", "Appliance", "Electronics", "Plumbing", "Cleaning"];
+    const categories = ["All", ...SERVICE_CATEGORIES.map(cat => CATEGORY_DISPLAY_NAMES[cat])];
 
     useEffect(() => {
         async function fetchServices() {

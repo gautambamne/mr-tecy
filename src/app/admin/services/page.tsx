@@ -48,7 +48,7 @@ export default function ServicesPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: "",
-        category: "Appliance" as ServiceCategory,
+        category: "car" as ServiceCategory,
         description: "",
         price: "",
         durationMinutes: "60",
@@ -74,7 +74,7 @@ export default function ServicesPage() {
             setEditingId(null);
             setFormData({
                 name: "",
-                category: "Appliance",
+                category: "car",
                 description: "",
                 price: "",
                 durationMinutes: "60",
@@ -422,11 +422,10 @@ export default function ServicesPage() {
                                             <SelectValue placeholder="Select category" />
                                         </SelectTrigger>
                                         <SelectContent className="z-[100]">
-                                            <SelectItem value="Vehicle">Vehicle</SelectItem>
-                                            <SelectItem value="Appliance">Appliance</SelectItem>
-                                            <SelectItem value="Electronics">Electronics</SelectItem>
-                                            <SelectItem value="Plumbing">Plumbing</SelectItem>
-                                            <SelectItem value="Cleaning">Cleaning</SelectItem>
+                                            <SelectItem value="car">Car</SelectItem>
+                                            <SelectItem value="bike">Bike</SelectItem>
+                                            <SelectItem value="electrician">Electrician</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

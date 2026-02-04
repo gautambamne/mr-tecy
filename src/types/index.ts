@@ -48,7 +48,7 @@ export interface Partner {
     photoURL?: string; // Partner profile photo
 }
 
-export type ServiceCategory = 'Appliance' | 'Vehicle' | 'Electronics' | 'Plumbing' | 'Cleaning';
+export type ServiceCategory = 'car' | 'bike' | 'electrician' | 'other';
 
 export interface Service {
     id: string;

@@ -12,6 +12,12 @@ export function CategoryCard({ image, label, category }: CategoryCardProps) {
     const router = useRouter();
 
     const handleClick = () => {
+        // For "For You" category (empty category), show all services
+        if (!category) {
+            router.push('/services');
+            return;
+        }
+
         // Navigate to dedicated category page
         const categoryParam = category || label;
         router.push(`/category/${encodeURIComponent(categoryParam.toLowerCase())}`);

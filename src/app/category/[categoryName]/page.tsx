@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, Loader2, Wrench } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { migrateLegacyCategory, CATEGORY_DISPLAY_NAMES } from "@/constants/categories";
 
 export default function CategoryPage() {
     const params = useParams();
@@ -17,9 +18,12 @@ export default function CategoryPage() {
         ? params.categoryName[0]
         : params.categoryName;
 
-    // Format category name for display (e.g., "vehicle" -> "Vehicle")
-    const displayCategory = categoryName
-        ? categoryName.charAt(0).toUpperCase() + categoryName.slice(1)
+    // Normalize the category (handle both old and new URL formats)
+    const normalizedCategory = categoryName ? migrateLegacyCategory(categoryName) : null;
+
+    // Get display name from constants
+    const displayCategory = normalizedCategory
+        ? CATEGORY_DISPLAY_NAMES[normalizedCategory]
         : "Services";
 
     const [services, setServices] = useState<Service[]>([]);
@@ -27,13 +31,13 @@ export default function CategoryPage() {
 
     useEffect(() => {
         async function fetchServices() {
-            if (!categoryName) return;
+            if (!normalizedCategory) return;
 
             try {
                 const allServices = await serviceService.getServices();
-                // Filter services by category
+                // Filter services by normalized category
                 const filtered = allServices.filter(
-                    (service) => service.category.toLowerCase() === categoryName.toLowerCase()
+                    (service) => service.category === normalizedCategory
                 );
                 setServices(filtered);
             } catch (error) {
@@ -43,7 +47,7 @@ export default function CategoryPage() {
             }
         }
         fetchServices();
-    }, [categoryName]);
+    }, [normalizedCategory]);
 
     return (
         <div className="min-h-screen bg-slate-50 pb-24">

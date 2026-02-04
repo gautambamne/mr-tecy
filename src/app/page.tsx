@@ -218,24 +218,24 @@ export default function HomePage() {
               </h2>
               <div className="grid grid-cols-4 gap-3">
                 <CategoryCard
-                  image="https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?w=400&auto=format&fit=crop&q=80"
-                  label="Vehicle"
-                  category="Vehicle"
+                  image="/images/categories/for-you.png"
+                  label="For You"
+                  category=""
                 />
                 <CategoryCard
-                  image="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&auto=format&fit=crop&q=80"
-                  label="Appliance"
-                  category="Appliance"
+                  image="https://images.unsplash.com/photo-1603386329225-868f9b1ee6c9?w=400&auto=format&fit=crop&q=80"
+                  label="Car"
+                  category="car"
+                />
+                <CategoryCard
+                  image="/images/categories/bike.png"
+                  label="Bike"
+                  category="bike"
                 />
                 <CategoryCard
                   image="https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=400&auto=format&fit=crop&q=80"
-                  label="Electronics"
-                  category="Electronics"
-                />
-                <CategoryCard
-                  image="https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400&auto=format&fit=crop&q=80"
-                  label="Plumbing"
-                  category="Plumbing"
+                  label="Electrician"
+                  category="electrician"
                 />
               </div>
             </section>
