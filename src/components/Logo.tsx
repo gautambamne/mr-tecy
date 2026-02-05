@@ -33,7 +33,7 @@ export function Logo({ className, showText = true }: LogoProps) {
 
             {showText && (
                 <span className="font-bold text-xl text-[#1e40af] tracking-tight">
-                    mrtecy
+                    Mr Tecy
                 </span>
             )}
         </div>
