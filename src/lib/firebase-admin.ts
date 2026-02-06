@@ -1,6 +1,7 @@
 import "server-only";
 import { initializeApp, getApps, cert, getApp, App } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import fs from "fs";
 import path from "path";
 
@@ -49,3 +50,4 @@ if (!getApps().length) {
 }
 
 export const adminDb = getFirestore(app);
+export const adminAuth = getAuth(app);

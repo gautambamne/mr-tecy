@@ -187,5 +187,20 @@ export const userService = {
             console.error("[ACTIVATE] Error:", error);
             throw error;
         }
+    },
+
+    /**
+     * Update user role (Admin only)
+     * Wrapper around server action for role updates with custom claims sync
+     */
+    async updateUserRole(currentUserId: string, targetUserId: string, newRole: UserRole): Promise<{ success?: boolean; error?: string; message?: string }> {
+        try {
+            // Import dynamically to avoid server-only code in client bundle
+            const { updateUserRoleAction } = await import("@/actions/user.actions");
+            return await updateUserRoleAction(currentUserId, targetUserId, newRole);
+        } catch (error) {
+            console.error("[updateUserRole] Error:", error);
+            throw error;
+        }
     }
 };

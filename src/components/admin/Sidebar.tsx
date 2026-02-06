@@ -10,7 +10,8 @@ import {
     Settings,
     LogOut,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    UserCog
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -34,6 +35,7 @@ export function Sidebar({ className, isOpen, onClose }: SidebarProps) {
         { href: "/admin/services", label: "Services", icon: Wrench },
         { href: "/admin/partners", label: "Partners", icon: Users },
         { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+        { href: "/admin/users", label: "Users", icon: UserCog },
     ];
 
     // Mobile Sidebar
