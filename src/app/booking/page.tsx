@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { serviceService } from "@/services/service.service";
@@ -51,7 +51,7 @@ const getCategoryImage = (category: ServiceCategory) => {
     }
 };
 
-export default function BookingPage() {
+function BookingPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, profile, loading: authLoading } = useAuth();
@@ -616,5 +616,22 @@ export default function BookingPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function BookingPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 flex items-center justify-center">
+                    <div className="text-center">
+                        <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-3" />
+                        <p className="text-sm font-bold text-slate-400">Loading booking...</p>
+                    </div>
+                </div>
+            }
+        >
+            <BookingPageContent />
+        </Suspense>
     );
 }
