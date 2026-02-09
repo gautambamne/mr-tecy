@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "leaflet/dist/leaflet.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { MobileGuard } from "@/components/MobileGuard";

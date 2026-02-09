@@ -35,7 +35,7 @@ export function BottomNavigation() {
             label: "Notification",
             badge: unreadCount > 0 ? unreadCount : undefined
         },
-        { href: "/services", icon: Plus, label: "Book Now", isFloating: true },
+        { href: "/booking", icon: Plus, label: "Book Now", isFloating: true },
         { href: "/history", icon: History, label: "History" },
         { href: "/profile", icon: User, label: "Account" },
     ]

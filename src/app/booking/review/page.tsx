@@ -32,14 +32,19 @@ export default function BookingReviewPage() {
             return;
         }
 
-        // Retrieve booking data from session storage
-        const data = sessionStorage.getItem("bookingReviewData");
-        if (!data) {
+        // Try new booking flow first, then fall back to old flow
+        const newData = sessionStorage.getItem("myBookingData");
+        const oldData = sessionStorage.getItem("bookingReviewData");
+
+        if (newData) {
+            setBookingData(JSON.parse(newData));
+        } else if (oldData) {
+            setBookingData(JSON.parse(oldData));
+        } else {
             router.push("/");
             return;
         }
 
-        setBookingData(JSON.parse(data));
         setLoading(false);
     }, [user]);
 
@@ -52,29 +57,68 @@ export default function BookingReviewPage() {
         setSubmitting(true);
 
         try {
-            const booking = await bookingService.createBooking({
-                customerId: user.uid,
-                customerName: profile.displayName,
-                partnerId: bookingData.partnerId,
-                partnerName: bookingData.partnerName,
-                serviceId: bookingData.serviceId,
-                serviceName: bookingData.serviceName,
-                servicePrice: bookingData.servicePrice,
-                type: bookingData.type,
-                scheduledTime: new Date(bookingData.scheduledTime) as any,
-                location: bookingData.location,
-                description: bookingData.description,
-                notes: bookingData.notes || "",
-                images: bookingData.images || [],
-                paymentMethod: "COD",
-                totalAmount: bookingData.totalAmount,
-            });
+            // Check if this is from the new flow (has services array) or old flow
+            const isNewFlow = Array.isArray(bookingData.services);
 
-            // Clear session data
-            sessionStorage.removeItem("bookingReviewData");
+            if (isNewFlow) {
+                // New multi-service flow: create separate bookings for each service
+                const bookings = [];
+                for (const service of bookingData.services) {
+                    const finalPrice = Math.round(
+                        service.price * service.quantity * (bookingData.priceMultiplier || 1)
+                    );
 
-            // Navigate to confirmation page
-            router.push(`/confirmation/${booking.id}`);
+                    const booking = await bookingService.createBooking({
+                        customerId: user.uid,
+                        customerName: profile.displayName,
+                        partnerId: bookingData.partnerId,
+                        partnerName: bookingData.partnerName,
+                        serviceId: service.id,
+                        serviceName: `${service.name} x${service.quantity}`,
+                        servicePrice: finalPrice,
+                        type: bookingData.bookingType || "instant",
+                        scheduledTime: new Date(bookingData.scheduledTime) as any,
+                        location: bookingData.address,
+                        description: bookingData.description,
+                        notes: bookingData.notes || "",
+                        images: bookingData.images || [],
+                        paymentMethod: "COD",
+                        totalAmount: finalPrice,
+                    });
+                    bookings.push(booking);
+                }
+
+                // Clear session data
+                sessionStorage.removeItem("myBookingData");
+
+                // Navigate to confirmation page of first booking
+                router.push(`/confirmation/${bookings[0].id}`);
+            } else {
+                // Old single-service flow
+                const booking = await bookingService.createBooking({
+                    customerId: user.uid,
+                    customerName: profile.displayName,
+                    partnerId: bookingData.partnerId,
+                    partnerName: bookingData.partnerName,
+                    serviceId: bookingData.serviceId,
+                    serviceName: bookingData.serviceName,
+                    servicePrice: bookingData.servicePrice,
+                    type: bookingData.type,
+                    scheduledTime: new Date(bookingData.scheduledTime) as any,
+                    location: bookingData.location,
+                    description: bookingData.description,
+                    notes: bookingData.notes || "",
+                    images: bookingData.images || [],
+                    paymentMethod: "COD",
+                    totalAmount: bookingData.totalAmount,
+                });
+
+                // Clear session data
+                sessionStorage.removeItem("bookingReviewData");
+
+                // Navigate to confirmation page
+                router.push(`/confirmation/${booking.id}`);
+            }
         } catch (error) {
             console.error("Error creating booking:", error);
             alert("Failed to create booking. Please try again.");

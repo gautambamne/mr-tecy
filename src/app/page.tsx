@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react"
-import { LogOut, User, LayoutDashboard, Search } from "lucide-react"
+import { LogOut, User, LayoutDashboard, Search, MapPin } from "lucide-react"
 import { SearchBar } from "@/components/SearchBar"
 import { CategoryCard } from "@/components/CategoryCard"
 import { ServiceCard } from "@/components/ServiceCard"
 import { BottomNavigation } from "@/components/BottomNavigation"
+import { LocationDialog } from "@/components/LocationDialog"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
 import {
@@ -28,6 +29,8 @@ export default function HomePage() {
   const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [savedLocation, setSavedLocation] = useState<{ districtName?: string; city?: string } | null>(null);
   const [filteredServices, setFilteredServices] = useState<Service[]>([]);
 
   useEffect(() => {
@@ -43,6 +46,40 @@ export default function HomePage() {
       }
     }
     fetchServices();
+  }, []);
+
+  // Load saved location from localStorage
+  useEffect(() => {
+    const loadSavedLocation = () => {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("selectedLocation");
+        if (saved) {
+          try {
+            setSavedLocation(JSON.parse(saved));
+          } catch (error) {
+            console.error("Error loading saved location:", error);
+          }
+        }
+      }
+    };
+    loadSavedLocation();
+
+    // Listen for storage changes to update location when dialog closes
+    const handleStorageChange = () => {
+      loadSavedLocation();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleStorageChange);
+      window.addEventListener("focus", loadSavedLocation);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleStorageChange);
+        window.removeEventListener("focus", loadSavedLocation);
+      }
+    };
   }, []);
 
   // Filter services when search query changes
@@ -62,7 +99,7 @@ export default function HomePage() {
   }, [searchQuery, services]);
 
   const maintenanceService = services.find(s => s.name.toLowerCase().includes("full car maintenance"));
-  const promotionLink = maintenanceService ? `/booking/${maintenanceService.id}` : "/services";
+  const promotionLink = maintenanceService ? `/booking?serviceId=${maintenanceService.id}` : "/services";
 
 
   const handleLogout = async () => {
@@ -83,15 +120,35 @@ export default function HomePage() {
                 <Logo />
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {profile?.role === 'admin' && (
-                <Link href="/admin">
-                  <Button variant="outline" size="sm" className="h-9 border-blue-200 text-blue-700 font-extrabold bg-blue-50/50 hover:bg-blue-100 rounded-full px-4 flex items-center gap-1.5 shadow-sm">
-                    <LayoutDashboard className="w-4 h-4" />
-                    ADMIN
-                  </Button>
-                </Link>
+            <div className="flex items-center gap-3">
+              {/* Location Display - Only show when logged in */}
+              {!authLoading && user && (
+                <>
+                  <button
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="hidden sm:flex flex-col items-end cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-[9px] text-slate-400 font-bold tracking-wider uppercase">Location</span>
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="text-xs font-bold text-slate-700 max-w-[120px] truncate">
+                        {savedLocation?.districtName || savedLocation?.city || "Set Location"}
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setLocationDialogOpen(true)}
+                    className="sm:hidden flex items-center gap-1.5 bg-white/50 px-2 py-1 rounded-full border border-blue-100 hover:bg-white/70 transition-colors"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="text-[10px] font-bold text-slate-700 max-w-[80px] truncate">
+                      {savedLocation?.districtName || "Set Location"}
+                    </span>
+                  </button>
+                </>
               )}
+
+
               {!authLoading && (
                 user ? (
                   <DropdownMenu>
@@ -172,7 +229,7 @@ export default function HomePage() {
             {filteredServices.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
                 {filteredServices.map((service) => (
-                  <Link key={service.id} href={`/booking/${service.id}`}>
+                  <Link key={service.id} href={`/booking?serviceId=${service.id}`}>
                     <ServiceCard
                       title={service.name}
                       description={service.description}
@@ -273,7 +330,7 @@ export default function HomePage() {
                   ))
                 ) : services.length > 0 ? (
                   services.map((service) => (
-                    <Link key={service.id} href={`/booking/${service.id}`}>
+                    <Link key={service.id} href={`/booking?serviceId=${service.id}`}>
                       <ServiceCard
                         title={service.name}
                         description={service.description}
@@ -314,6 +371,24 @@ export default function HomePage() {
           </>
         )}
       </main>
+
+      <LocationDialog
+        open={locationDialogOpen}
+        onOpenChange={(open) => {
+          setLocationDialogOpen(open);
+          if (!open && typeof window !== "undefined") {
+            // Reload saved location when dialog closes
+            const saved = localStorage.getItem("selectedLocation");
+            if (saved) {
+              try {
+                setSavedLocation(JSON.parse(saved));
+              } catch (error) {
+                console.error("Error loading saved location:", error);
+              }
+            }
+          }
+        }}
+      />
 
       <BottomNavigation />
     </div>

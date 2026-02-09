@@ -133,7 +133,7 @@ export default function ServicesPage() {
                 ) : filteredServices.length > 0 ? (
                     <div className="grid grid-cols-2 gap-4">
                         {filteredServices.map((service) => (
-                            <Link key={service.id} href={`/booking/${service.id}`}>
+                            <Link key={service.id} href={`/booking?serviceId=${service.id}`}>
                                 <ServiceCard
                                     title={service.name}
                                     description={service.description}

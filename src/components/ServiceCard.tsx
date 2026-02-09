@@ -17,6 +17,7 @@ export function ServiceCard({ title, description, image, price, badge }: Service
                     src={image}
                     alt={title}
                     fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 {badge && (
