@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react"
-import { LogOut, User, LayoutDashboard, Search, MapPin } from "lucide-react"
+import { Search, MapPin } from "lucide-react"
 import { SearchBar } from "@/components/SearchBar"
 import { CategoryCard } from "@/components/CategoryCard"
 import { ServiceCard } from "@/components/ServiceCard"
@@ -9,14 +9,7 @@ import { BottomNavigation } from "@/components/BottomNavigation"
 import { LocationDialog } from "@/components/LocationDialog"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/Logo"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import { useAuth } from "@/context/AuthContext"
 import Link from "next/link"
 import { authService } from "@/services/auth.service"
@@ -102,9 +95,7 @@ export default function HomePage() {
   const promotionLink = maintenanceService ? `/booking?serviceId=${maintenanceService.id}` : "/services";
 
 
-  const handleLogout = async () => {
-    await authService.logout();
-  }
+
 
   return (
     <div className="min-h-screen pb-24 bg-slate-50 relative">
@@ -149,60 +140,12 @@ export default function HomePage() {
               )}
 
 
-              {!authLoading && (
-                user ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border-2 border-white shadow-sm overflow-hidden ring-2 ring-blue-100 ring-offset-2 ml-1">
-                        <img
-                          src={profile?.photoURL || user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.displayName || user.displayName || "User")}&background=0D8ABC&color=fff`}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                      <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-bold leading-none">{profile?.displayName || user.displayName || "User"}</p>
-                          <p className="text-xs leading-none text-muted-foreground text-slate-500">
-                            {user.email}
-                          </p>
-                          {profile?.role === 'admin' && (
-                            <span className="text-[10px] items-center bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-bold w-fit mt-1 uppercase">
-                              Admin Account
-                            </span>
-                          )}
-                        </div>
-                      </DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      {profile?.role === 'admin' && (
-                        <Link href="/admin">
-                          <DropdownMenuItem className="cursor-pointer font-bold text-blue-600">
-                            <LayoutDashboard className="mr-2 h-4 w-4" />
-                            <span>Admin Dashboard</span>
-                          </DropdownMenuItem>
-                        </Link>
-                      )}
-                      <Link href="/profile">
-                        <DropdownMenuItem className="cursor-pointer">
-                          <User className="mr-2 h-4 w-4" />
-                          <span>Profile</span>
-                        </DropdownMenuItem>
-                      </Link>
-                      <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer">
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Link href="/login">
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-full text-sm font-bold shadow-md transition-all active:scale-95">
-                      Login
-                    </Button>
-                  </Link>
-                )
+              {!authLoading && !user && (
+                <Link href="/login">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-full text-sm font-bold shadow-md transition-all active:scale-95">
+                    Login
+                  </Button>
+                </Link>
               )}
             </div>
           </div>
