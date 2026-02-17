@@ -7,10 +7,11 @@ import { bookingService } from "@/services/booking.service";
 import { UserProfile, PartnerApplication, Service } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Star, ShieldCheck, ChevronLeft, User, Wrench, AlertCircle, Info, DollarSign, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Loader2, Star, ShieldCheck, ChevronLeft, User, Wrench, AlertCircle, Info, DollarSign, ChevronDown, ChevronUp, X, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import { calculateBookingEndTime, parseTimeSlot } from "@/utils/time-overlap.util";
+import { calculateDistance, formatDistance, calculateDistanceCharge } from "@/utils/distance.util";
 
 interface BookingData {
     services: Array<Service & { quantity: number }>;
@@ -63,6 +64,9 @@ export default function PartnerSelectionPage() {
                 // Fetch partners for the first service
                 if (parsedData.services && parsedData.services.length > 0) {
                     const partnersData = await partnerMatchingService.getPartnersForService(parsedData.services[0].id);
+                    console.log("[PartnerSelection] Booking Data:", parsedData);
+                    console.log("[PartnerSelection] Partners Found:", partnersData);
+                    partnersData.forEach(p => console.log(`Partner ${p.displayName} location:`, p.location));
                     setPartners(partnersData);
                 }
             } catch (error) {
@@ -134,14 +138,26 @@ export default function PartnerSelectionPage() {
 
     const calculateFinalPrice = (
         baseAmount: number,
-        priceMultiplier: number = 1,
+        partner: UserProfile,
         isFromAdditionalSection: boolean = false
     ) => {
-        let finalPrice = baseAmount * priceMultiplier;
+        let finalPrice = baseAmount * (partner.priceMultiplier || 1);
 
         // Apply 20% additional charge for "More Available Partners" section
         if (isFromAdditionalSection) {
             finalPrice *= 1.2;
+        }
+
+        // Distance Charge logic
+        if (!bookingData?.selfDropMode && partner.location && bookingData?.location) {
+            const dist = calculateDistance(
+                bookingData.location.lat,
+                bookingData.location.lng,
+                partner.location.lat,
+                partner.location.lng
+            );
+            const charge = calculateDistanceCharge(dist);
+            finalPrice += charge;
         }
 
         return Math.round(finalPrice);
@@ -277,7 +293,14 @@ export default function PartnerSelectionPage() {
         // Active partners come first
         if (aIsBusy && !bIsBusy) return 1;
         if (!aIsBusy && bIsBusy) return -1;
-        return 0;
+
+        // Then sort by distance (Nearest first)
+        if (!bookingData?.location) return 0;
+
+        const distA = a.location ? calculateDistance(bookingData.location.lat, bookingData.location.lng, a.location.lat, a.location.lng) : 99999;
+        const distB = b.location ? calculateDistance(bookingData.location.lat, bookingData.location.lng, b.location.lat, b.location.lng) : 99999;
+
+        return distA - distB;
     });
 
     // Section 1: First 3 partners (Active prioritized, then Busy)
@@ -415,7 +438,7 @@ export default function PartnerSelectionPage() {
                             const isSelected = selectedPartner === partner.uid;
                             const finalPrice = calculateFinalPrice(
                                 bookingData.totalAmount,
-                                partner.priceMultiplier,
+                                partner,
                                 false // Not from additional section
                             );
 
@@ -435,13 +458,28 @@ export default function PartnerSelectionPage() {
                                 >
                                     {/* Status Badge */}
                                     {(!isSelected || isBusy) && (
-                                        <div className={cn(
-                                            "absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide z-10",
-                                            isBusy
-                                                ? "bg-red-100 text-red-700 border border-red-300"
-                                                : "bg-green-100 text-green-700 border border-green-300"
-                                        )}>
-                                            {isBusy ? "Busy" : "Active"}
+                                        <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5 z-10">
+                                            <div className={cn(
+                                                "px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide",
+                                                isBusy
+                                                    ? "bg-red-100 text-red-700 border border-red-300"
+                                                    : "bg-green-100 text-green-700 border border-green-300"
+                                            )}>
+                                                {isBusy ? "Busy" : "Active"}
+                                            </div>
+
+                                            {/* Distance Badge */}
+                                            {partner.location && bookingData?.location && (
+                                                <div className="px-2 py-0.5 rounded-md bg-slate-100/80 backdrop-blur-sm border border-slate-200 text-[10px] font-bold text-slate-600 flex items-center gap-1 shadow-sm">
+                                                    <MapPin className="w-3 h-3 text-blue-500" />
+                                                    {formatDistance(calculateDistance(
+                                                        bookingData.location.lat,
+                                                        bookingData.location.lng,
+                                                        partner.location.lat,
+                                                        partner.location.lng
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 
@@ -599,7 +637,7 @@ export default function PartnerSelectionPage() {
                                     const isSelected = selectedPartner === partner.uid;
                                     const finalPrice = calculateFinalPrice(
                                         bookingData.totalAmount,
-                                        partner.priceMultiplier,
+                                        partner,
                                         true // From additional section - higher charge
                                     );
 
@@ -779,6 +817,38 @@ export default function PartnerSelectionPage() {
                                                     <p className="text-xs text-blue-600 font-semibold uppercase">Price Multiplier</p>
                                                     <p className="font-bold text-lg text-blue-600 mt-1">{partner.priceMultiplier || 1}x</p>
                                                 </div>
+                                            </div>
+
+                                            {/* Location & Distance */}
+                                            <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100">
+                                                {partner.location ? (
+                                                    <div className="flex items-start gap-2">
+                                                        <MapPin className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                                                        <div>
+                                                            <p className="text-xs text-slate-500 font-semibold uppercase mb-0.5">Location</p>
+                                                            <p className="text-sm font-bold text-slate-900 line-clamp-2">
+                                                                {partner.location.address || "Location coordinates set"}
+                                                            </p>
+                                                            {bookingData?.location ? (
+                                                                <p className="text-xs font-bold text-blue-600 mt-1 bg-blue-100/50 inline-block px-2 py-0.5 rounded-md">
+                                                                    {formatDistance(calculateDistance(
+                                                                        bookingData.location.lat,
+                                                                        bookingData.location.lng,
+                                                                        partner.location.lat,
+                                                                        partner.location.lng
+                                                                    ))} away
+                                                                </p>
+                                                            ) : (
+                                                                <p className="text-xs text-amber-600 mt-1">Distance unavailable (User location missing)</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-xs text-red-500 font-bold flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        Partner Location Not Set
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Experience */}

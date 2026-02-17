@@ -283,6 +283,7 @@ export default function PartnerBookingsPage() {
                     booking={selectedBooking}
                     open={modalOpen}
                     onOpenChange={setModalOpen}
+                    partnerLocation={profile?.location}
                 />
             </div>
         </div>

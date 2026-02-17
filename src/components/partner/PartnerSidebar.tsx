@@ -8,7 +8,8 @@ import {
     Star,
     LogOut,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -31,6 +32,7 @@ export function PartnerSidebar({ className, isOpen, onClose }: PartnerSidebarPro
         { href: "/partner/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/partner/dashboard/bookings", label: "My Bookings", icon: Calendar },
         { href: "/partner/dashboard/reviews", label: "Reviews", icon: Star },
+        { href: "/partner/dashboard/location", label: "Service Location", icon: MapPin },
     ];
 
     // Mobile Sidebar

@@ -6,18 +6,20 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { Booking } from "@/types";
+import { Booking, UserProfile } from "@/types";
 import { format } from "date-fns";
 import { Calendar, Clock, CreditCard, Variable, MapPin, Phone, User, Wrench, FileText, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calculateDistance, formatDistance } from "@/utils/distance.util";
 
 interface BookingDetailsModalProps {
     booking: Booking | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    partnerLocation?: UserProfile['location'];
 }
 
-export function BookingDetailsModal({ booking, open, onOpenChange }: BookingDetailsModalProps) {
+export function BookingDetailsModal({ booking, open, onOpenChange, partnerLocation }: BookingDetailsModalProps) {
     if (!booking) return null;
 
     const getStatusColor = (status: string) => {
@@ -30,6 +32,23 @@ export function BookingDetailsModal({ booking, open, onOpenChange }: BookingDeta
             default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
     };
+
+    if (booking?.location?.geoPoint && partnerLocation) {
+        console.log("Distance Calculation Debug:");
+        console.log("Partner Location:", partnerLocation);
+        console.log("Booking Location:", booking.location.geoPoint);
+    }
+
+    const distance = (booking.location?.geoPoint && partnerLocation)
+        ? calculateDistance(
+            partnerLocation.lat,
+            partnerLocation.lng,
+            booking.location.geoPoint.latitude,
+            booking.location.geoPoint.longitude
+        )
+        : null;
+
+    console.log("Calculated Distance:", distance);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -177,11 +196,37 @@ export function BookingDetailsModal({ booking, open, onOpenChange }: BookingDeta
 
                     {/* Location */}
                     <div className="space-y-2">
-                        <h4 className="font-bold text-slate-900">Service Location</h4>
-                        <div className="p-4 bg-slate-50 rounded-lg">
-                            <p className="text-slate-700">
-                                {booking.location.street}, {booking.location.city} - {booking.location.zipCode}
-                            </p>
+                        <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-slate-900">Service Location</h4>
+                            {distance !== null && (
+                                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
+                                    {formatDistance(distance)} away
+                                </span>
+                            )}
+                        </div>
+                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                            <div className="flex items-start gap-3">
+                                <MapPin className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-slate-700 font-medium">
+                                        {booking.location.street}
+                                    </p>
+                                    <p className="text-slate-500 text-sm">
+                                        {booking.location.city}, {booking.location.zipCode}
+                                    </p>
+                                    {booking.location.geoPoint && (
+                                        <a
+                                            href={`https://www.google.com/maps/dir/?api=1&origin=${partnerLocation?.lat},${partnerLocation?.lng}&destination=${booking.location.geoPoint.latitude},${booking.location.geoPoint.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 mt-3 hover:underline"
+                                        >
+                                            Get Directions
+                                            <MapPin className="w-3 h-3" />
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
 

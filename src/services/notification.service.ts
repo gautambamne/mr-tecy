@@ -38,7 +38,7 @@ export const notificationService = {
 
     async saveToken(userId: string, token: string) {
         try {
-            const userRef = doc(db, "users", userId);
+            const userRef = doc(db, "user", userId);
             await updateDoc(userRef, {
                 fcmTokens: arrayUnion(token)
             });

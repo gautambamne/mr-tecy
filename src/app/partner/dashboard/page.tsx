@@ -5,13 +5,14 @@ import { bookingService } from "@/services/booking.service";
 import { reviewService } from "@/services/review.service";
 import { Booking, Review } from "@/types";
 import { useState, useEffect } from "react";
-import { Loader2, Calendar, Star, CheckCircle2, DollarSign, Clock, ChevronRight } from "lucide-react";
+import { Loader2, Calendar, Star, CheckCircle2, DollarSign, Clock, ChevronRight, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { StatCard } from "@/components/admin/StatCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RealtimeIndicator } from "@/components/admin/RealtimeIndicator";
+
 
 export default function PartnerDashboard() {
     const { profile } = useAuth();
@@ -128,7 +129,35 @@ export default function PartnerDashboard() {
                         color="from-blue-500 to-blue-600"
                         loading={loading}
                     />
+                    <StatCard
+                        title="Total Revenue"
+                        value={`₹${stats.totalRevenue}`}
+                        icon={DollarSign}
+                        color="from-blue-500 to-blue-600"
+                        loading={loading}
+                    />
                 </div>
+
+                {/* Location Manager */}
+                {/* Location Status Card */}
+                <Card className="border-none shadow-md hover:shadow-xl bg-white/95 backdrop-blur-md transition-all duration-300">
+                    <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                        <div className="space-y-1">
+                            <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-blue-600" />
+                                Service Location
+                            </CardTitle>
+                            <CardDescription className="text-xs text-slate-500 font-medium max-w-md">
+                                {profile?.location?.address || "Location not set. Set your location to get nearby bookings."}
+                            </CardDescription>
+                        </div>
+                        <Link href="/partner/dashboard/location">
+                            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 font-bold">
+                                Manage Location
+                            </Button>
+                        </Link>
+                    </CardHeader>
+                </Card>
 
                 {/* Secondary Stats - Mobile Optimized */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">

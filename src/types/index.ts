@@ -31,6 +31,11 @@ export interface UserProfile {
     availability?: 'online' | 'offline';
     priceMultiplier?: number;
     fcmTokens?: string[];
+    location?: {
+        lat: number;
+        lng: number;
+        address?: string;
+    };
 }
 
 // Partner is now a Resource, not a User
@@ -42,7 +47,11 @@ export interface Partner {
     rating: number;
     reviewCount: number;
     availability: 'online' | 'offline';
-    location: GeoPoint;
+    location: {
+        lat: number;
+        lng: number;
+        address?: string;
+    };
     contactInfo?: string;
     completedJobs: number; // For social proof
     priceMultiplier: number; // Pricing flexibility (e.g., 1.0 = base price, 1.2 = 20% premium)
