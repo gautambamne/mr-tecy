@@ -121,8 +121,8 @@ export default function BookingSchedulePage() {
 
         sessionStorage.setItem("myBookingData", JSON.stringify(updatedBookingData));
 
-        // Navigate to review page
-        router.push("/booking/review");
+        // Navigate to partner selection (Reverse Flow: Schedule -> Partner)
+        router.push("/booking/partner-selection");
     };
 
     if (authLoading || loading) {
@@ -235,8 +235,18 @@ export default function BookingSchedulePage() {
                             </p>
                             <input
                                 type="date"
-                                value={selectedDate ? format(selectedDate, "yyyy-MM-dd") : ""}
-                                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                                value={selectedDate && !isNaN(selectedDate.getTime()) ? format(selectedDate, "yyyy-MM-dd") : ""}
+                                onChange={(e) => {
+                                    const dateValue = e.target.value;
+                                    if (!dateValue) {
+                                        setSelectedDate(undefined);
+                                        return;
+                                    }
+                                    const newDate = new Date(dateValue);
+                                    if (!isNaN(newDate.getTime())) {
+                                        setSelectedDate(newDate);
+                                    }
+                                }}
                                 min={format(new Date(), "yyyy-MM-dd")}
                                 className="w-full p-4 border-2 border-slate-200 rounded-2xl font-semibold text-slate-900 focus:border-blue-600 focus:outline-none transition-colors"
                             />
@@ -366,7 +376,7 @@ export default function BookingSchedulePage() {
                         {submitting ? (
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
-                            "Continue to Review"
+                            "Find Available Partners"
                         )}
                     </Button>
                 </div>

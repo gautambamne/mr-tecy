@@ -4,10 +4,12 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { serviceService } from "@/services/service.service";
+import { bookingService } from "@/services/booking.service"; // Import booking service
 import { Partner, Service } from "@/types";
 import { Button } from "@/components/ui/button";
 import { PartnerCard } from "@/components/PartnerCard";
-import { ChevronLeft, Loader2, Filter, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, Loader2, Filter, SlidersHorizontal, Calendar, Clock, MapPin } from "lucide-react"; // Added icons
+import { format } from "date-fns"; // Added date-fns
 
 import {
     DropdownMenu,
@@ -32,6 +34,10 @@ export default function PartnersPage() {
     const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Booking context data
+    const [bookingContext, setBookingContext] = useState<any>(null);
+    const [bookedPartnerIds, setBookedPartnerIds] = useState<string[]>([]);
+
     // Filters
     const [onlyOnline, setOnlyOnline] = useState(false);
     const [minRating, setMinRating] = useState<number>(0);
@@ -43,6 +49,30 @@ export default function PartnersPage() {
             return;
         }
 
+        // Check for pending booking data
+        const pendingDataStr = sessionStorage.getItem("pendingBookingData");
+        if (!pendingDataStr) {
+            // If no booking data, redirect to schedule page first
+            // But check if we are just browsing (maybe distinct route needed? For now enforce flow)
+            console.log("No pending booking data, redirecting to schedule");
+            router.push(`/schedule?serviceId=${serviceId}`);
+            return;
+        }
+
+        try {
+            const data = JSON.parse(pendingDataStr);
+            if (data.serviceId !== serviceId) {
+                // Mismatch service, restart
+                router.push(`/schedule?serviceId=${serviceId}`);
+                return;
+            }
+            setBookingContext(data);
+        } catch (e) {
+            console.error("Invalid booking data", e);
+            router.push(`/schedule?serviceId=${serviceId}`);
+            return;
+        }
+
         if (serviceId) {
             fetchData();
         }
@@ -50,21 +80,41 @@ export default function PartnersPage() {
 
     useEffect(() => {
         applyFilters();
-    }, [partners, onlyOnline, minRating, sortBy]);
+    }, [partners, onlyOnline, minRating, sortBy, bookedPartnerIds]);
 
     const fetchData = async () => {
         try {
-            const [serviceData, partnersData] = await Promise.all([
+            // Get booking data again to be sure (state might not be set yet in this scope if closure issue)
+            const pendingDataStr = sessionStorage.getItem("pendingBookingData");
+            let scheduledTime: Date | null = null;
+
+            if (pendingDataStr) {
+                const data = JSON.parse(pendingDataStr);
+                scheduledTime = new Date(data.scheduledTime);
+            }
+
+            const promises: Promise<any>[] = [
                 serviceService.getServiceById(serviceId as string),
                 partnerService.getAvailablePartners(
                     serviceId as string,
                     undefined,
                     'rating'
                 )
-            ]);
+            ];
+
+            // If we have a scheduled time, fetch conflicting bookings
+            if (scheduledTime) {
+                promises.push(bookingService.getBookedPartnerIds(scheduledTime));
+            }
+
+            const results = await Promise.all(promises);
+            const serviceData = results[0];
+            const partnersData = results[1];
+            const busyIds = results[2] || [];
 
             setService(serviceData);
             setPartners(partnersData);
+            setBookedPartnerIds(busyIds);
         } catch (error) {
             console.error("Error fetching partners:", error);
         } finally {
@@ -74,6 +124,11 @@ export default function PartnersPage() {
 
     const applyFilters = () => {
         let filtered = [...partners];
+
+        // Filter out booked partners
+        if (bookedPartnerIds.length > 0) {
+            filtered = filtered.filter(p => !bookedPartnerIds.includes(p.id));
+        }
 
         // Apply availability filter
         if (onlyOnline) {
@@ -102,19 +157,26 @@ export default function PartnersPage() {
         setFilteredPartners(filtered);
     };
 
-    const handleContinueToSchedule = () => {
+    const handleContinue = () => {
         if (!selectedPartner) {
             alert("Please select a partner");
             return;
         }
 
-        // Add selected partner to session storage
-        const bookingData = JSON.parse(sessionStorage.getItem("bookingData") || "{}");
-        bookingData.partnerId = selectedPartner;
-        bookingData.partnerName = partners.find(p => p.id === selectedPartner)?.name || "";
-        sessionStorage.setItem("bookingData", JSON.stringify(bookingData));
+        // Add selected partner to booking data and move to review
+        const partner = partners.find(p => p.id === selectedPartner);
+        if (!partner) return;
 
-        router.push("/schedule");
+        const bookingData = {
+            ...bookingContext,
+            partnerId: partner.id,
+            partnerName: partner.name,
+            // You might want to recalculate price based on partner multiplier here if needed
+            // totalAmount: service.price * partner.priceMultiplier 
+        };
+
+        sessionStorage.setItem("bookingReviewData", JSON.stringify(bookingData));
+        router.push("/booking/review");
     };
 
     if (loading) {
@@ -135,8 +197,19 @@ export default function PartnersPage() {
                     </Button>
                     <div className="flex-1">
                         <h1 className="text-xl font-extrabold text-slate-900">Select Partner</h1>
-                        {service && (
-                            <p className="text-sm text-slate-600">{service.name}</p>
+                        {/* Booking Context Summary */}
+                        {bookingContext && (
+                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {format(new Date(bookingContext.scheduledTime), "MMM d")}
+                                </span>
+                                <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {format(new Date(bookingContext.scheduledTime), "h:mm a")}
+                                </span>
+                            </div>
                         )}
                     </div>
 
@@ -270,11 +343,11 @@ export default function PartnersPage() {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-6 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
                 <div className="max-w-md mx-auto">
                     <Button
-                        onClick={handleContinueToSchedule}
+                        onClick={handleContinue}
                         disabled={!selectedPartner}
                         className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-2xl font-extrabold text-lg shadow-xl shadow-blue-200 transition-all active:scale-95 disabled:opacity-50"
                     >
-                        Continue to Schedule →
+                        Continue to Review →
                     </Button>
                 </div>
             </div>

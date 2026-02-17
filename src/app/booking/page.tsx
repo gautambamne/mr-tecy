@@ -65,6 +65,7 @@ function BookingPageContent() {
     const [addressLabel, setAddressLabel] = useState<AddressLabel>("home");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [fetchedAddress, setFetchedAddress] = useState<{ city: string; zip: string; street: string } | null>(null);
 
     // Load services
     useEffect(() => {
@@ -77,6 +78,41 @@ function BookingPageContent() {
 
         fetchServices();
     }, [user, authLoading]);
+
+    // Fetch address details when location changes
+    useEffect(() => {
+        const fetchAddressDetails = async () => {
+            try {
+                // Determine if we should fetch. 
+                // Only fetch if it's not the default center (unless user really is there) 
+                // but simpler to just fetch always or debounced.
+                // Nominatim has strict usage policy (1 request/sec). 
+                // Since this runs on drag end (from LocationMap), it should be okay.
+
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`
+                );
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const addr = data.address || {};
+
+                // Prioritize District -> City -> Town -> Village
+                const district = addr.state_district || addr.district || addr.city || addr.town || addr.village || addr.county || "Unknown District";
+                const zip = addr.postcode || "000000";
+                const street = addr.road || addr.suburb || addr.neighbourhood || `Location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`;
+
+                setFetchedAddress({ city: district, zip, street });
+            } catch (error) {
+                console.warn("Error fetching address details:", error);
+                setFetchedAddress(null);
+            }
+        };
+
+        const timer = setTimeout(fetchAddressDetails, 1000); // 1s debounce
+        return () => clearTimeout(timer);
+    }, [location]);
 
     // Set initial location from localStorage (selected from dialog) or user's first address
     useEffect(() => {
@@ -201,9 +237,9 @@ function BookingPageContent() {
         // Convert location to Address format
         const address: Partial<Address> = {
             label: addressLabel.charAt(0).toUpperCase() + addressLabel.slice(1),
-            street: `Location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
-            city: "Selected Location",
-            zipCode: "000000",
+            street: fetchedAddress?.street || `Location: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`,
+            city: fetchedAddress?.city || "Selected Location",
+            zipCode: fetchedAddress?.zip || "000000",
             geoPoint: new GeoPoint(location.lat, location.lng),
         };
 
@@ -220,8 +256,8 @@ function BookingPageContent() {
 
         sessionStorage.setItem("myBookingData", JSON.stringify(bookingData));
 
-        // Navigate to partner selection
-        router.push("/booking/partner-selection");
+        // Navigate to schedule page (Reverse Flow: Schedule -> Partner)
+        router.push("/booking/schedule");
     };
 
     // Show loading while auth is initializing

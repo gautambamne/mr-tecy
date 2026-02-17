@@ -81,11 +81,16 @@ service cloud.firestore {
                        request.resource.data.customerId == request.auth.uid;
       
       // Customers can read their own bookings, partners can read assigned bookings, admins see all
-      allow read: if isAuthenticated() && (
+      allow get: if isAuthenticated() && (
         resource.data.customerId == request.auth.uid ||
         resource.data.partnerId == request.auth.uid ||
         isAdmin()
       );
+      
+      // AVAILABILITY CHECK: Allow authenticated users to list/query bookings
+      // This is needed for checking partner availability when making new bookings
+      // Users can see booking exists but not necessarily all details
+      allow list: if isAuthenticated();
       
       // Helper function to validate status transitions
       function isValidStatusTransition(oldStatus, newStatus) {

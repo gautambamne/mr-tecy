@@ -13,10 +13,12 @@ import {
     Unsubscribe,
     limit,
     startAfter,
-    DocumentSnapshot
+    DocumentSnapshot,
+    Timestamp
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Booking, BookingStatus } from "@/types";
+import { checkTimeOverlap, calculateBookingEndTime, getDayBoundaries } from "@/utils/time-overlap.util";
 
 export const bookingService = {
     // Create New Booking (Customer)
@@ -453,6 +455,132 @@ export const bookingService = {
         } catch (error) {
             console.error("[BookingService] Error getting booking:", error);
             throw error;
+        }
+    },
+
+    /**
+     * Get partner bookings for a specific date
+     * OPTIMIZED: Query by date range instead of fetching all bookings
+     * 
+     * @param partnerId - ID of the partner
+     * @param date - The date to check bookings for
+     * @returns Array of bookings for this partner on this date
+     */
+    async getPartnerBookingsForDate(partnerId: string, date: Date): Promise<Booking[]> {
+        try {
+            const bookingsRef = collection(db, "bookings");
+            const { startOfDay, endOfDay } = getDayBoundaries(date);
+
+            // Query bookings for this partner on the selected date (filtering in memory to avoid index errors)
+            const q = query(
+                bookingsRef,
+                where("scheduledTime", ">=", Timestamp.fromDate(startOfDay)),
+                where("scheduledTime", "<", Timestamp.fromDate(endOfDay))
+            );
+
+            const snapshot = await getDocs(q);
+            return snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as Booking))
+                .filter(booking =>
+                    booking.partnerId === partnerId &&
+                    ['pending', 'accepted', 'in_progress'].includes(booking.status)
+                );
+        } catch (error) {
+            console.error("[BookingService] Error fetching partner bookings:", error);
+            return [];
+        }
+    },
+
+    /**
+     * Check if a partner is available for a specific time slot
+     * REAL-TIME AVAILABILITY CHECK using time overlap detection
+     * 
+     * @param partnerId - ID of the partner to check
+     * @param selectedStart - Start time of the desired booking
+     * @param selectedEnd - End time of the desired booking
+     * @returns Availability status and overlapping booking if any
+     */
+    async checkPartnerAvailability(
+        partnerId: string,
+        selectedStart: Date,
+        selectedEnd: Date
+    ): Promise<{ available: boolean; overlappingBooking?: Booking }> {
+        try {
+            // Get all bookings for this partner on the selected date
+            const bookings = await this.getPartnerBookingsForDate(partnerId, selectedStart);
+
+            // Check each booking for time overlap
+            for (const booking of bookings) {
+                const bookingStart = booking.scheduledTime.toDate();
+                const bookingEnd = calculateBookingEndTime(bookingStart);
+
+                // Check if times overlap
+                if (checkTimeOverlap(selectedStart, selectedEnd, bookingStart, bookingEnd)) {
+                    return {
+                        available: false,
+                        overlappingBooking: booking
+                    };
+                }
+            }
+
+            // No overlaps found - partner is available
+            return { available: true };
+        } catch (error) {
+            console.error("[BookingService] Error checking partner availability:", error);
+            // On error, assume unavailable to be safe
+            return { available: false };
+        }
+    },
+
+    /**
+     * Get IDs of partners who are already booked for a specific time slot
+     * REFACTORED: Now uses time overlap detection instead of exact time matching
+     * 
+     * @param scheduledTime - The start time of the slot to check
+     * @param partners - Array of partner IDs to check (optional, if not provided checks all)
+     * @returns Array of partner IDs who have a booking overlapping with this time
+     */
+    async getBookedPartnerIds(scheduledTime: Date, partners?: string[]): Promise<string[]> {
+        try {
+            const bookingsRef = collection(db, "bookings");
+            const { startOfDay, endOfDay } = getDayBoundaries(scheduledTime);
+            const selectedEnd = calculateBookingEndTime(scheduledTime);
+
+            // Query all bookings on the selected date (filtering in memory to avoid index errors)
+            const q = query(
+                bookingsRef,
+                where("scheduledTime", ">=", Timestamp.fromDate(startOfDay)),
+                where("scheduledTime", "<", Timestamp.fromDate(endOfDay))
+            );
+
+            const snapshot = await getDocs(q);
+            const busyPartnerIds = new Set<string>();
+
+            // Check each booking for time overlap
+            snapshot.docs.forEach(doc => {
+                const booking = doc.data() as Booking;
+
+                // Client-side filtering for active status
+                if (!['pending', 'accepted', 'in_progress'].includes(booking.status)) {
+                    return;
+                }
+
+                const bookingStart = booking.scheduledTime.toDate();
+                const bookingEnd = calculateBookingEndTime(bookingStart);
+
+                // Check if this booking overlaps with the selected time slot
+                if (checkTimeOverlap(scheduledTime, selectedEnd, bookingStart, bookingEnd)) {
+                    // If partners filter is provided, only include partners in the list
+                    if (!partners || partners.includes(booking.partnerId)) {
+                        busyPartnerIds.add(booking.partnerId);
+                    }
+                }
+            });
+
+            return Array.from(busyPartnerIds);
+        } catch (error) {
+            console.error("[BookingService] Error checking partner availability:", error);
+            return [];
         }
     }
 };

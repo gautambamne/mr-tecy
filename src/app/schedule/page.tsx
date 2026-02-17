@@ -44,6 +44,7 @@ function SchedulePageContent() {
 
     // URL params
     const serviceId = searchParams.get("serviceId");
+    // partnerId is now optional - if present, we are in "direct booking" mode (e.g. from re-booking)
     const partnerId = searchParams.get("partnerId");
 
     // Booking data from API
@@ -79,7 +80,7 @@ function SchedulePageContent() {
             return;
         }
 
-        if (!serviceId || !partnerId) {
+        if (!serviceId) {
             router.push("/");
             return;
         }
@@ -96,22 +97,24 @@ function SchedulePageContent() {
 
     const loadData = async () => {
         try {
-            const [serviceData, partnerUserData] = await Promise.all([
-                serviceService.getServiceById(serviceId as string),
-                userService.getUserProfile(partnerId as string), // Fetch partner by user ID
-            ]);
-
+            // Always fetch service
+            const serviceData = await serviceService.getServiceById(serviceId as string);
             setService(serviceData);
 
-            // Enrich partner with application data
-            if (partnerUserData) {
-                const partnerApp = await partnerApplicationService.getPartnerStatus(partnerId as string);
-                setPartner({
-                    ...partnerUserData,
-                    ...(partnerApp || {})
-                } as any);
-            } else {
-                setPartner(null);
+            // If partnerId exists, fetch partner details
+            if (partnerId) {
+                const partnerUserData = await userService.getUserProfile(partnerId as string);
+
+                // Enrich partner with application data
+                if (partnerUserData) {
+                    const partnerApp = await partnerApplicationService.getPartnerStatus(partnerId as string);
+                    setPartner({
+                        ...partnerUserData,
+                        ...(partnerApp || {})
+                    } as any);
+                } else {
+                    setPartner(null);
+                }
             }
         } catch (error) {
             console.error("Error loading data:", error);
@@ -194,32 +197,41 @@ function SchedulePageContent() {
         // Calculate scheduled time
         let scheduledDateTime: Date;
         if (bookingType === "instant") {
-            scheduledDateTime = new Date();
+            scheduledDateTime = new Date(); // Current time for instant booking
         } else {
             const [hours, minutes] = selectedTimeSlot.split(":");
             scheduledDateTime = new Date(selectedDate!);
             scheduledDateTime.setHours(parseInt(hours), parseInt(minutes), 0);
         }
 
-        // Navigate to review page with all data
+        // Prepare base booking data
         const bookingData = {
             serviceId: service!.id,
             serviceName: service!.name,
             servicePrice: service!.price,
-            partnerId: partner!.uid, // Changed from partner.id to partner.uid
-            partnerName: partner!.displayName, // Changed from partner.name to partner.displayName
             type: bookingType,
             scheduledTime: scheduledDateTime.toISOString(),
             location: selectedAddress,
             description,
             notes,
             images: uploadedImages,
-            totalAmount: service!.price, // Remove priceMultiplier as it's not on UserProfile
+            totalAmount: service!.price,
         };
 
-        // Store in session storage for review page
-        sessionStorage.setItem("bookingReviewData", JSON.stringify(bookingData));
-        router.push("/booking/review");
+        // If partner is already selected (e.g., from direct link), go straight to review
+        if (partner) {
+            const fullBookingData = {
+                ...bookingData,
+                partnerId: partner.uid,
+                partnerName: partner.displayName,
+            };
+            sessionStorage.setItem("bookingReviewData", JSON.stringify(fullBookingData));
+            router.push("/booking/review");
+        } else {
+            // Otherwise, save data and go to partner selection
+            sessionStorage.setItem("pendingBookingData", JSON.stringify(bookingData));
+            router.push(`/partners/${serviceId}`);
+        }
     };
 
     if (loading) {
@@ -227,16 +239,16 @@ function SchedulePageContent() {
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-slate-500 font-medium">Loading booking details...</p>
+                    <p className="text-sm text-slate-500 font-medium">Loading details...</p>
                 </div>
             </div>
         );
     }
 
-    if (!service || !partner) {
+    if (!service) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-                <p className="text-slate-500">Service or partner not found</p>
+                <p className="text-slate-500">Service not found</p>
             </div>
         );
     }
@@ -254,50 +266,69 @@ function SchedulePageContent() {
                     >
                         <ChevronLeft className="w-5 h-5 text-slate-700" />
                     </button>
-                    <h1 className="text-lg font-bold text-slate-900">Booking Details</h1>
+                    <h1 className="text-lg font-bold text-slate-900">
+                        {partner ? "Booking Details" : "Schedule Service"}
+                    </h1>
                 </div>
             </header>
 
             <main className="max-w-md mx-auto px-4 pb-32 pt-5 space-y-5">
-                {/* Service & Partner Card */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg shadow-blue-200/50">
-                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                    <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
+                {/* Service Card */}
+                {partner ? (
+                    // Show Service + Partner if partner is selected
+                    <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 rounded-2xl p-5 text-white shadow-lg shadow-blue-200/50">
+                        <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl" />
 
-                    <div className="relative">
-                        <div className="flex items-start justify-between mb-4">
-                            <div>
-                                <h2 className="text-2xl font-extrabold mb-1 tracking-tight">{service.name}</h2>
-                                <p className="text-blue-100 text-sm font-medium flex items-center gap-1">
-                                    <span className="w-1 h-1 bg-blue-200 rounded-full" />
-                                    {service.category}
-                                </p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-xs text-blue-200 mb-0.5">Base Price</p>
-                                <span className="text-3xl font-black">₹{service.price}</span>
-                            </div>
-                        </div>
-
-                        <div className="pt-3.5 mt-3.5 border-t border-white/20 flex items-center justify-between">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-base font-bold shadow-md">
-                                    {partner.displayName.charAt(0).toUpperCase()}
-                                </div>
+                        <div className="relative">
+                            <div className="flex items-start justify-between mb-4">
                                 <div>
-                                    <p className="text-sm font-bold">{partner.displayName}</p>
-                                    <div className="flex items-center gap-1 text-blue-200 text-xs mt-0.5">
-                                        <ShieldCheck className="w-3 h-3" />
-                                        <span>{partner.experience || 0} years experience</span>
+                                    <h2 className="text-2xl font-extrabold mb-1 tracking-tight">{service.name}</h2>
+                                    <p className="text-blue-100 text-sm font-medium flex items-center gap-1">
+                                        <span className="w-1 h-1 bg-blue-200 rounded-full" />
+                                        {service.category}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-blue-200 mb-0.5">Base Price</p>
+                                    <span className="text-3xl font-black">₹{service.price}</span>
+                                </div>
+                            </div>
+
+                            <div className="pt-3.5 mt-3.5 border-t border-white/20 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-base font-bold shadow-md">
+                                        {partner.displayName.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold">{partner.displayName}</p>
+                                        <div className="flex items-center gap-1 text-blue-200 text-xs mt-0.5">
+                                            <ShieldCheck className="w-3 h-3" />
+                                            <span>{partner.experience || 0} years experience</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
-                                <span className="text-sm font-bold">{partner.serviceArea || 'Service Available'}</span>
+                                <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-2.5 py-1.5 rounded-full">
+                                    <span className="text-sm font-bold">{partner.serviceArea || 'Service Available'}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    // Show only Service if no partner selected yet
+                    <div className="relative overflow-hidden bg-slate-900 rounded-2xl p-5 text-white shadow-lg">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h2 className="text-xl font-bold mb-1">{service.name}</h2>
+                                <p className="text-slate-400 text-sm">{service.category}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs text-slate-400 mb-0.5">Estimated Price</p>
+                                <span className="text-2xl font-bold">₹{service.price}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Booking Type */}
                 <div className="space-y-2.5">
@@ -610,7 +641,7 @@ function SchedulePageContent() {
                             <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                             <span className="flex items-center gap-2">
-                                Continue to Review
+                                {partner ? "Continue to Review" : "Find Available Partners"}
                                 <ChevronLeft className="w-4 h-4 rotate-180" />
                             </span>
                         )}
@@ -627,7 +658,7 @@ export default function SchedulePage() {
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-blue-600 animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-slate-500 font-medium">Loading booking details...</p>
+                    <p className="text-sm text-slate-500 font-medium">Loading...</p>
                 </div>
             </div>
         }>
